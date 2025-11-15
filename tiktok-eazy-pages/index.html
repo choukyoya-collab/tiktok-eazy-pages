@@ -11,7 +11,7 @@
     .app{display:flex;min-height:100vh}
     .sidebar{width:320px;background:linear-gradient(180deg,rgba(255,255,255,0.02),transparent);padding:24px}
     .brand{font-weight:700;font-size:18px;margin-bottom:18px}
-    .btn{display:inline-block;padding:10px 14px;border-radius:10px;background:var(--accent);color:#fff;text-decoration:none;cursor:pointer}
+    .btn{display:inline-block;padding:10px 14px;border-radius:10px;background:var(--accent);color:#fff;text-decoration:none;cursor:pointer;border:none}
     .muted{color:var(--sub)}
     .content{flex:1;padding:24px}
     .card{background:var(--card);padding:16px;border-radius:12px;margin-bottom:12px}
@@ -25,7 +25,7 @@
     .actions{display:flex;gap:8px}
     .link{color:var(--accent);cursor:pointer;text-decoration:underline}
     footer{color:var(--sub);font-size:13px;margin-top:12px}
-    .big-btn{padding:14px 18px;border-radius:14px;background:var(--accent);font-weight:700}
+    .big-btn{padding:14px 18px;border-radius:14px;background:var(--accent);font-weight:700;border:none;color:#fff}
     .tree{max-height:220px;overflow:auto}
     .notice{background:#11202a;padding:8px;border-radius:8px;color:var(--sub)}
     .flex{display:flex;gap:10px;align-items:center}
@@ -46,7 +46,7 @@
         <button class="btn" onclick="nav('live')">Live Manager</button>
         <button class="btn" onclick="nav('history')">ประวัติ</button>
         <button class="btn" onclick="nav('manage')">จัดการบัญชี</button>
-        <button class="btn" onclick="nav('settings')">การตั้งค่า</button>
+        <!-- Settings intentionally removed/hidden per request -->
       </div>
       <hr style="margin:14px 0;border-color:rgba(255,255,255,0.02)" />
       <div class="notice small">Local-only: เว็บนี้เก็บข้อมูลใน browser (localStorage). ฟีเจอร์บางอย่างต้อง backend (OAuth แลก token, ffmpeg) — มีคำแนะนำด้านล่าง</div>
@@ -66,8 +66,8 @@ function loadState(){
   try{ const raw=localStorage.getItem(STORAGE_KEY); if(raw){ state=JSON.parse(raw) } }
   catch(e){ console.error(e) }
   if(!state.config) state.config = {
-    CLIENT_KEY: 'YOUR_CLIENT_KEY_HERE',
-    CLIENT_SECRET: '',
+    CLIENT_KEY: 'awmb0l4uzmjqs3q0',
+    CLIENT_SECRET: '34Wl4GjbyytEotoAzNneBf3blYCZau6g',
     REDIRECT_URI: 'http://localhost:7890/callback',
     OAUTH_SCOPES: 'user.info.basic video.upload video.publish',
     AUTHORIZE_BASE: 'https://open-api.tiktok.com/platform/oauth/connect/',
@@ -83,7 +83,7 @@ function saveState(){ localStorage.setItem(STORAGE_KEY, JSON.stringify(state)) }
 loadState()
 
 // --- Navigation ---
-function nav(k){ const views = {dashboard:renderDashboard,login:renderLogin,composer:renderComposer,live:renderLive,history:renderHistory,manage:renderManage,settings:renderSettings}
+function nav(k){ const views = {dashboard:renderDashboard,login:renderLogin,composer:renderComposer,live:renderLive,history:renderHistory,manage:renderManage} 
   const fn = views[k] || renderDashboard; document.getElementById('view-area').innerHTML = ''; fn()
 }
 
@@ -157,7 +157,7 @@ function renderLogin(){
     <div id="login-area"></div>
   </div>`)
   document.getElementById('view-area').appendChild(root)
-  document.getElementById('open-auth').onclick = ()=>{ const u = buildAuthUrl(); window.open(u,'_blank'); alert('เปิดหน้า authorize — หลังจาก login ให้คัดลอก URL ที่ redirect แล้ววางในฟีเจอร์ "วาง token JSON"') }
+  document.getElementById('open-auth').onclick = ()=>{ const u = buildAuthUrl(); window.open(u,'_blank'); alert('เปิดหน้า authorize — หลังจาก login ให้คัดลอก URL ที่ redirect แล้ววางในฟีเจอร์ \"วาง token JSON\"') }
   document.getElementById('paste-token').onclick = ()=>{ showPasteToken() }
 }
 
@@ -191,9 +191,7 @@ function renderComposer(){
 }
 function postNow(){ const file=document.getElementById('file-input').value.trim(); if(!file) return alert('เลือกไฟล์'); const caption=document.getElementById('caption').value.trim(); const checkboxes = Array.from(document.querySelectorAll('#acc-select input[type=checkbox]:checked')).map(n=>n.value);
   if(checkboxes.length===0) return alert('เลือกบัญชีอย่างน้อย 1 บัญชี');
-  checkboxes.forEach(id=>{ const post={id:uid(),account_id:id,filepath:file,caption:caption,created_at:(new Date()).toISOString(),status:'queued'}; state.posts.push(post); // add to history queue
-    // add cart default
-  })
+  checkboxes.forEach(id=>{ const post={id:uid(),account_id:id,filepath:file,caption:caption,created_at:(new Date()).toISOString(),status:'queued'}; state.posts.push(post); })
   saveState(); renderQueue(); alert('ส่งเข้า queue เรียบร้อย') }
 function renderQueue(){ const elq=document.getElementById('post-queue'); if(!elq) return; elq.innerHTML=''
   state.posts.filter(p=>p.status==='queued' || p.status==='posting').slice().reverse().forEach(p=>{ const acc = state.accounts.find(a=>a.id===p.account_id) || {label:p.account_id}; const d=document.createElement('div'); d.style.padding='8px'; d.innerHTML = `<div><strong>${acc.label}</strong> — ${p.caption||'(no caption)'} <div class='small muted'>${formatDate(p.created_at)} • ${p.status}</div></div>`; elq.appendChild(d) }) }
@@ -223,23 +221,12 @@ function addAccountFromJson(){ try{ const raw = document.getElementById('addaccj
 function copyTokens(idx){ const a=state.accounts[idx]; prompt('tokens JSON (คัดลอกได้)', JSON.stringify(a.tokens||{})) }
 function deleteAccount(idx){ if(!confirm('ลบบัญชีนี้?')) return; state.accounts.splice(idx,1); saveState(); nav('manage') }
 
-function renderSettings(){ const c=state.config; const root = el(`<div class='card'><h3>การตั้งค่า</h3>
-  <label>CLIENT_KEY</label><input id='cfg_ck' value='${c.CLIENT_KEY||''}' />
-  <label>CLIENT_SECRET</label><input id='cfg_cs' value='${c.CLIENT_SECRET||''}' />
-  <label>REDIRECT_URI</label><input id='cfg_ru' value='${c.REDIRECT_URI||''}' />
-  <label>Scopes</label><input id='cfg_scopes' value='${c.OAUTH_SCOPES||''}' />
-  <label>Authorize base</label><input id='cfg_ab' value='${c.AUTHORIZE_BASE||''}' />
-  <label>Token endpoint</label><input id='cfg_te' value='${c.TOKEN_ENDPOINT||''}' />
-  <div style='margin-top:8px'><button class='btn' onclick='saveSettings()'>บันทึก</button></div>
-  <div style='margin-top:8px' class='small muted'>หมายเหตุ: เว็บนี้ไม่มี server-side. ถ้าต้องการแลก code&gt;token อัตโนมัติ ต้องมี backend ที่คอนฟิก REDIRECT_URI</div>
-</div>`)
-  document.getElementById('view-area').appendChild(root)
-}
-function saveSettings(){ state.config.CLIENT_KEY = document.getElementById('cfg_ck').value.trim(); state.config.CLIENT_SECRET = document.getElementById('cfg_cs').value.trim(); state.config.REDIRECT_URI = document.getElementById('cfg_ru').value.trim(); state.config.OAUTH_SCOPES = document.getElementById('cfg_scopes').value.trim(); state.config.AUTHORIZE_BASE = document.getElementById('cfg_ab').value.trim(); state.config.TOKEN_ENDPOINT = document.getElementById('cfg_te').value.trim(); saveState(); alert('บันทึกการตั้งค่าเรียบร้อย') }
+function renderSettings(){ /* intentionally kept but not exposed in UI */ }
+function saveSettings(){ /* intentionally disabled */ }
 
 // --- Product/cart helpers ---
 function openLink(url){ window.open(url,'_blank') }
-function addProductToCart(pid){ const sel = prompt('กรุณากรอก ID บัญชีที่จะเพิ่มสินค้า (หรือเลือกจากหน้าจัดการบัญชี)')
+function addProductToCart(pid){ const sel = prompt('กรุณากรอก ID บัญชีที่จะเพิ่มสินค้า (หรือเลือกจากหน้าจัดการบัญชี)') 
   if(!sel) return; const accId = sel.trim(); const p = state.products.find(x=>x.id===pid) || {}; state.carts[accId] = state.carts[accId] || []; state.carts[accId].push({id:p.id,name:p.name,price:p.price}); saveState(); alert('เพิ่มสินค้าในตะกร้าให้บัญชี '+accId) }
 
 // --- Initial render ---
